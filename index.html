@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Daylight Hours Visualization</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
+
+    
+    <style>
+    
+        #visualization-wrapper {
+            display: flex;
+            margin: 20px;  /* Reduced margin to allow more space */
+            width: 95vw;   /* Use viewport width, leaving small margin */
+        }
+        
+        #container {
+            display: flex;
+            height: 500px;
+            width: 100%;    /* This was already correct */
+            background: #f5f5f5;
+            padding: 20px;
+            gap: 0;
+        }
+    
+        .day-line {
+            flex: 1;
+            margin: 0;
+            width: calc(100% / 365);
+            min-width: 1px;
+            background: linear-gradient(to top, #000033, #000033);
+        }
+        
+        #time-axis {
+            width: 50px;
+            margin-right: 10px;
+            position: relative;
+            height: 500px;
+            flex-shrink: 0;  /* Prevent time axis from shrinking */
+        }
+    
+            
+            .time-label {
+                position: absolute;
+                right: 10px;
+                transform: translateY(-50%);
+                font-size: 12px;
+            }
+            
+            #month-axis {
+                display: flex;
+                justify-content: space-between;
+                margin-left: 60px;
+                margin-top: 10px;
+            }
+            
+            .month-label {
+                font-size: 12px;
+                width: 30px;
+                text-align: center;
+            }
+            
+            #container {
+                position: relative;
+            }
+        </style>
+        
+    
+    
+    </head>
+<body>
+    <input type="text" id="location" placeholder="Enter city, state, or country (e.g., Paris, France)">
+    <button onclick="updateVisualization()">Show Daylight Hours</button>
+    <div id="visualization-wrapper">
+        <div id="time-axis"></div>
+        <div>
+            <div id="container"></div>
+            <div id="month-axis"></div>
+        </div>
+    </div>
+
+
+    <script>
+   
+  /*  async function getCoordinates(location) {
+            const encodedLocation = encodeURIComponent(location);
+            const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodedLocation}`);
+            const data = await response.json();
+            
+            if (data.length === 0) {
+                throw new Error('Location not found');
+            }
+            
+            return {
+                lat: parseFloat(data[0].lat),
+                lng: parseFloat(data[0].lon)
+            };
+        } */
+        function createTimeAxis() {
+            const timeAxis = document.getElementById('time-axis');
+            timeAxis.innerHTML = '';
+            
+            // Create 24 hour labels in reverse order
+            for (let hour = 23; hour >= 0; hour--) {
+                const label = document.createElement('div');
+                label.className = 'time-label';
+                label.textContent = hour.toString().padStart(2, '0') + ':00';
+                // Reverse the position calculation
+                label.style.top = (((23 - hour) / 24) * 100) + '%';
+                timeAxis.appendChild(label);
+            }
+        }
+    
+            function createMonthAxis() {
+                const monthAxis = document.getElementById('month-axis');
+                monthAxis.innerHTML = '';
+                
+                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                              'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                
+                // Create a container for the labels to match the visualization width
+                const labelContainer = document.createElement('div');
+                labelContainer.style.display = 'flex';
+                labelContainer.style.width = '100%';
+                labelContainer.style.justifyContent = 'space-between';
+                monthAxis.appendChild(labelContainer);
+                
+                months.forEach((month) => {
+                    const label = document.createElement('div');
+                    label.className = 'month-label';
+                    label.textContent = month;
+                    labelContainer.appendChild(label);
+                });
+            }
+    
+ /*        async function updateVisualization() {
+            const location = document.getElementById('location').value;
+            const container = document.getElementById('container');
+            container.innerHTML = '';
+            
+            try {
+                createTimeAxis();
+                createMonthAxis();
+
+                const coords = await getCoordinates(location);
+                const currentYear = new Date().getFullYear();
+                
+                for (let day = 0; day < 365; day++) {
+                    // Get times for current day and next day to handle wraparound
+                    const currentDate = new Date(currentYear, 0, day + 1);
+                    const nextDate = new Date(currentYear, 0, day + 2);
+                    
+                    // Get sun times for both days
+                    const currentTimes = SunCalc.getTimes(currentDate, coords.lat, coords.lng);
+                    const nextTimes = SunCalc.getTimes(nextDate, coords.lat, coords.lng);
+                    
+                    // Convert all times to hours relative to start of current day
+                    const currentSunrise = currentTimes.sunrise.getHours() + currentTimes.sunrise.getMinutes() / 60;
+                    const currentSunset = currentTimes.sunset.getHours() + currentTimes.sunset.getMinutes() / 60;
+                    const nextSunrise = nextTimes.sunrise.getHours() + nextTimes.sunrise.getMinutes() / 60 + 24;
+                    const nextSunset = nextTimes.sunset.getHours() + nextTimes.sunset.getMinutes() / 60 + 24;
+                    
+                    // Create day line with the appropriate sunrise/sunset times
+                    const dayLine = createDayLine(
+                        currentDate, 
+                        coords.lat, 
+                        coords.lng, 
+                        currentSunrise,
+                        currentSunset,
+                        nextSunrise,
+                        nextSunset
+                    );
+                    container.appendChild(dayLine);
+                }
+            } catch (error) {
+                alert('Location not found or error fetching data');
+            }
+        }
+ */
+        function createDayLine(date, lat, lng, currentSunrise, currentSunset, nextSunrise, nextSunset) {
+    // Handle polar day/night cases
+    if (isNaN(currentSunrise) || isNaN(currentSunset)) {
+        const solarNoon = SunCalc.getTimes(date, lat, lng).solarNoon;
+        const solarPos = SunCalc.getPosition(solarNoon, lat, lng);
+        const altitude = solarPos.altitude * (180 / Math.PI);
+        return createConstantDayLine(altitude > 0 ? '#FFD700' : '#000033');
+    }
+
+    const line = document.createElement('div');
+    line.className = 'day-line';
+
+    // Determine if we have a wraparound case
+    if (currentSunset < currentSunrise) {
+        // Sun is up at the start of the day (from previous day's sunrise)
+        line.style.background = `linear-gradient(to top,
+            #FFA500 0%,
+            #FFA500 ${(currentSunset/24)*100}%,
+            #000033 ${(currentSunset/24)*100}%,
+            #000033 ${(currentSunrise/24)*100}%,
+            #FFD700 ${(currentSunrise/24)*100}%,
+            #FFD700 100%
+        )`;
+    } else {
+        // Normal case - sun rises and sets within the same day
+        line.style.background = `linear-gradient(to top,
+            #000033 0%,
+            #000033 ${(currentSunrise/24)*100}%,
+            #FFD700 ${(currentSunrise/24)*100}%,
+            #FFA500 ${(currentSunset/24)*100}%,
+            #000033 ${(currentSunset/24)*100}%,
+            #000033 100%
+        )`;
+    }
+    
+    return line;
+}
+
+async function getCoordinates(location) {
+    try {
+        const encodedLocation = encodeURIComponent(location);
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodedLocation}`);
+        const data = await response.json();
+        
+        if (data.length === 0) {
+            throw new Error('Location not found');
+        }
+        
+        console.log('Location data:', data[0]); // Debug log
+        
+        return {
+            lat: parseFloat(data[0].lat),
+            lng: parseFloat(data[0].lon),
+            timezone: 'local' // Temporarily use local timezone
+        };
+    } catch (error) {
+        console.error('Error in getCoordinates:', error);
+        throw new Error(`Failed to find location: ${error.message}`);
+    }
+}
+
+async function updateVisualization() {
+    const location = document.getElementById('location').value;
+    const container = document.getElementById('container');
+    container.innerHTML = '';
+    
+    try {
+        createTimeAxis();
+        createMonthAxis();
+
+        console.log('Searching for location:', location);
+        const coords = await getCoordinates(location);
+        console.log('Coordinates found:', coords);
+        
+        const currentYear = new Date().getFullYear();
+        
+        for (let day = 0; day < 365; day++) {
+            // Get times for current day and next day to handle wraparound
+            const currentDate = new Date(currentYear, 0, day + 1);
+            const nextDate = new Date(currentYear, 0, day + 2);
+            
+            // Get sun times for both days
+            const currentTimes = SunCalc.getTimes(currentDate, coords.lat, coords.lng);
+            const nextTimes = SunCalc.getTimes(nextDate, coords.lat, coords.lng);
+            
+            // Convert all times to hours relative to start of current day
+            const currentSunrise = currentTimes.sunrise.getHours() + currentTimes.sunrise.getMinutes() / 60;
+            const currentSunset = currentTimes.sunset.getHours() + currentTimes.sunset.getMinutes() / 60;
+            const nextSunrise = nextTimes.sunrise.getHours() + nextTimes.sunrise.getMinutes() / 60 + 24;
+            const nextSunset = nextTimes.sunset.getHours() + nextTimes.sunset.getMinutes() / 60 + 24;
+            
+            // Create day line with the appropriate sunrise/sunset times
+            const dayLine = createDayLine(
+                currentDate, 
+                coords.lat, 
+                coords.lng, 
+                currentSunrise,
+                currentSunset,
+                nextSunrise,
+                nextSunset
+            );
+            container.appendChild(dayLine);
+        }
+    } catch (error) {
+        console.error('Error in updateVisualization:', error);
+        alert(error.message || 'Location not found or error fetching data');
+    }
+}
+function convertToLocalTime(date, timezone) {
+    const localDate = new Date(date.toLocaleString('en-US', {timeZone: timezone}));
+    return localDate.getHours() + localDate.getMinutes() / 60;
+}
+
+        function createConstantDayLine(color) {
+            const line = document.createElement('div');
+            line.className = 'day-line';
+            line.style.background = color;
+            return line;
+        }
+
+ </script>
+</body>
+</html>
